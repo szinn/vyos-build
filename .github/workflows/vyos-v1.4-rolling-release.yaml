@@ -2,8 +2,8 @@ name: VyOS v1.4 Rolling Release
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: 0 3 * * *
+  # schedule:
+  #   - cron: 0 3 * * *
 
 env:
   GIT_CLONE_URL: https://github.com/vyos/vyos-build
