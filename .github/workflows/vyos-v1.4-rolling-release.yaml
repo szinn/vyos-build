@@ -37,7 +37,7 @@ jobs:
           echo "iso-name=${{ env.VERSION }}-${build_date}-${{ env.ARCHITECTURE }}" >> "$GITHUB_OUTPUT"
 
       - name: Clone source code
-        run: git clone -b $BRANCH --single-branch $GIT_CLONE_URL
+        run: git clone -b $BRANCH --single-branch $GIT_CLONE_URL .
 
       - name: Download sops deb
         uses: robinraju/release-downloader@768b85c8d69164800db5fc00337ab917daf3ce68 # v1.7
@@ -45,10 +45,9 @@ jobs:
           repository: mozilla/sops
           latest: true
           fileName: "*amd64.deb"
-          out-file-path: vyos-build/packages
+          out-file-path: packages
 
       - name: Build ISO
-        working-directory: ./vyos-build
         run: |
           sudo make clean
           sudo ./build-vyos-image iso --architecture $ARCHITECTURE \
