@@ -22,6 +22,20 @@ jobs:
       options: --workdir /vyos --privileged
 
     steps:
+      - name: Generate Token
+        uses: tibdex/github-app-token@b62528385c34dbc9f38e5f4225ac829252d1ea92 # v1.8.0
+        id: generate-token
+        with:
+          app_id: "${{ secrets.BOT_APP_ID }}"
+          private_key: "${{ secrets.BOT_APP_PRIVATE_KEY }}"
+
+      - name: Setup variables
+        id: vars
+        run: |
+          build_date=$(date +%Y%m%d%H%M)
+          echo "tag-name=${{ env.VERSION }}-${build_date}" >> "$GITHUB_OUTPUT"
+          echo "iso-name=${{ env.VERSION }}-${build_date}-${{ env.ARCHITECTURE }}" >> "$GITHUB_OUTPUT"
+
       - name: Clone source code
         run: git clone -b $BRANCH --single-branch $GIT_CLONE_URL
 
@@ -45,40 +59,13 @@ jobs:
             --custom-package "git" \
             --custom-package "jq"
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v3
+      - name: Create release with artifact
+        uses: ncipollo/release-action@a2e71bdd4e7dab70ca26a852f29600c98b33153e # v1
         with:
-          name: vyos-${{ env.VERSION }}-${{ env.ARCHITECTURE }}-iso
-          path: vyos-build/build/vyos-${{ env.VERSION }}-*.iso
-
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Download artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: vyos-${{ env.VERSION }}-${{ env.ARCHITECTURE }}-iso
-          path: vyos-${{ env.VERSION }}-${{ env.ARCHITECTURE }}-iso
-
-      - name: Upload release asset
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          asset=$(find ./vyos-${{ env.VERSION }}-${{ env.ARCHITECTURE }}-iso/ -name "vyos-${{ env.VERSION }}-*.iso" | xargs)
-          tag_name="v${{ env.VERSION }}"
-          hub release edit -a "$asset" -m "" "$tag_name"
-
-  delete_old_workflow_runs:
-    needs: release
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Delete old workflow runs
-        uses: GitRML/delete-workflow-runs@main
-        with:
-          retain_days: 31
+          token: "${{ steps.generate-token.outputs.token }}"
+          tag: "v${{ steps.vars.outputs.tag-name }}"
+          artifacts: "./vyos-build/build/vyos-${{ steps.vars.outputs.iso-name }}.iso"
+          artifactErrorsFailBuild: true
+          body: |
+            Official VyOS Changelog:
+            https://docs.vyos.io/en/latest/changelog/1.4.html
