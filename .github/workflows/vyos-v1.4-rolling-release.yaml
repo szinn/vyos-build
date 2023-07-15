@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: vyos/vyos-build:current
-      options: --workdir /vyos --privileged
+      options: --privileged # --workdir /vyos
 
     steps:
       - name: Generate Token
@@ -51,7 +51,8 @@ jobs:
         working-directory: ./vyos-build
         run: |
           sudo make clean
-          sudo ./build-vyos-image iso --architecture $ARCHITECTURE \
+          sudo ./build-vyos-image iso \
+            --architecture $ARCHITECTURE \
             --build-by $BUILD_BY \
             --build-type $BUILD_TYPE \
             --version $VERSION-$(date +%Y%m%d%H%M) \
